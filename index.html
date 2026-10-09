@@ -194,9 +194,9 @@
 
     <script>
         // --- НАЛАШТУВАННЯ GITHUB GIST (БАЗА ДАНИХ) ---
-        const GIST_RAW_URL = "https://gist.githubusercontent.com/MrWerte/2e35d57fd36d5297ae37b71405345972/raw/734990d7ac42ba14d5ea95ac20df730a3711d84e/beshket_db.json"; 
-        const GIST_ID = "2e35d57fd36d5297ae37b71405345972"; // наприклад: "a1b2c3d4..."
-        const GITHUB_TOKEN = "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"; // наприклад: "ghp_..."
+        const GIST_RAW_URL = "https://gist.githubusercontent.com/MrWerte/2e35d57fd36d5297ae37b71405345972/raw/beshket_db.json"; 
+        const GIST_ID = "2e35d57fd36d5297ae37b71405345972"; 
+        const GITHUB_TOKEN = "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"; 
 
         const allowedEditors = ["sofia.prystupa2000@gmail.com", "werteyegor@gmail.com", "president@school.ua"];
         let articles = [];
@@ -247,7 +247,7 @@
             document.getElementById('add-article-btn').classList.toggle('hidden', !currentEditorEmail);
         }
 
-        // ЗАВАНТАЖЕННЯ ДАНИХ З GIST
+        // ЗАВАНТАЖЕННЯ ДАНИХ З GIST З ОБХОДОМ КЕШУ
         async function fetchArticlesFromDB() {
             if (!GIST_RAW_URL || GIST_RAW_URL.includes("ВСТАВТЕ")) {
                 articles = [
@@ -258,7 +258,7 @@
             }
 
             try {
-                const response = await fetch(GIST_RAW_URL + "?t=" + Date.now());
+                const response = await fetch(GIST_RAW_URL + "?t=" + Date.now(), { cache: "no-store" });
                 const data = await response.json();
                 articles = data.articles || [];
                 renderNewspaper();
