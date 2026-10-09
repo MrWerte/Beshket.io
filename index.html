@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="uk" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>"БЕШКЕТ"</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for Editorial feel -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        newspaper: ['"Playfair Display"', 'serif'],
+                        body: ['Lora', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        paper: '#fdfbf7',
+                        ink: '#1c1917',
+                        aged: '#f4ede2',
+                        sepia: '#e2d4bc',
+                        accent: '#991b1b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #e5e0d8;
+            background-image: radial-gradient(#d1c7bc 0.75px, transparent 0.75px), radial-gradient(#d1c7bc 0.75px, #e5e0d8 0.75px);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+        }
+
+        .book-container {
+            perspective: 2500px;
+        }
+
+        .newspaper-spread {
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.8s ease;
+        }
+
+        .page-shadow {
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.18), 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f4ede2;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c8b9a6;
+            border-radius: 3px;
+        }
+
+        @keyframes pageTurnSmooth {
+            0% {
+                opacity: 0.2;
+                transform: rotateY(15deg) scale(0.98);
+            }
+            100% {
+                opacity: 1;
+                transform: rotateY(0deg) scale(1);
+            }
+        }
+
+        .page-turn-anim {
+            animation: pageTurnSmooth 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+    </style>
+</head>
+
+<body class="h-full flex flex-col font-body text-ink antialiased selection:bg-accent selection:text-white">
+
+    <header class="bg-paper border-b border-stone-300 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class=""></span>
+                <h1 class="font-newspaper text-2xl font-bold tracking-tight text-ink flex items-center gap-2">
+                    <i class=""></i> БЕШКЕТ
+                </h1>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div id="auth-status" class="text-sm font-sans flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-full border border-stone-200">
+                    <i class="fa-regular fa-user text-stone-500"></i>
+                    <span id="current-user-display" class="font-medium text-stone-700"></span>
+                </div>
+
+                <button onclick="openAuthModal()" class="bg-stone-800 hover:bg-stone-900 text-white font-sans text-xs px-4 py-2 rounded-md transition shadow hover:shadow-md flex items-center gap-1.5">
+                    <i class="fa-solid fa-key"></i> <span id="auth-btn-text">Доступ редактора</span>
+                </button>
+
+                <button id="add-article-btn" onclick="openEditorModal()" class="hidden bg-accent hover:bg-red-800 text-white font-sans text-xs px-4 py-2 rounded-md transition shadow hover:shadow-md flex items-center gap-1.5 animate-pulse">
+                    <i class="fa-solid fa-plus"></i> Додати новину
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col justify-center items-center">
+        <!-- Панель керування без зайвих іконок -->
+        <div class="w-full max-w-5xl flex flex-wrap items-center justify-between mb-6 bg-paper/90 backdrop-blur p-3 rounded-lg border border-stone-300 shadow-sm">
+            <div class="flex items-center space-x-2 text-sm font-sans text-stone-600">
+                <span class="font-medium">БЕШКЕТ</span>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="prevSpread()" id="prev-btn" class="px-3.5 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded text-xs font-sans font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
+                    <i class="fa-solid fa-chevron-left"></i> ПОЧАТОК
+                </button>
+                <span id="page-indicator" class="font-mono text-xs text-stone-600 px-2 font-semibold">Сторінка 1 / 1</span>
+                <button onclick="nextSpread()" id="next-btn" class="px-3.5 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded text-xs font-sans font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1">
+                    ДАЛІ <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="book-container w-full max-w-5xl aspect-[4/2.6] bg-paper page-shadow rounded-sm border border-stone-300 relative flex overflow-hidden">
+            <div id="left-page" class="newspaper-spread w-1/2 h-full p-8 border-r border-stone-300 bg-[#fefdfa] overflow-y-auto flex flex-col justify-between relative selection:bg-accent selection:text-white"></div>
+            <div id="right-page" class="newspaper-spread w-1/2 h-full p-8 bg-[#fdfbf7] overflow-y-auto flex flex-col justify-between relative selection:bg-accent selection:text-white"></div>
+            <div class="absolute left-1/2 top-0 bottom-0 w-8 -ml-4 pointer-events-none bg-gradient-to-r from-transparent via-black/10 to-transparent z-10"></div>
+        </div>
+    </main>
+
+    <!-- Модальне вікно авторизації -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-paper rounded-lg max-w-md w-full p-6 shadow-2xl border border-stone-400 relative font-sans">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 text-accent mb-2">
+                    <i class="fa-solid fa-shield-halved text-xl"></i>
+                </div>
+                <h3 class="font-newspaper text-2xl font-bold text-ink">Доступ редактора новин</h3>
+                <p class="text-xs text-stone-600 mt-1">Введіть вашу електронну пошту для активації прав редактора.</p>
+            </div>
+
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-stone-700 mb-1">Email адреса</label>
+                    <input type="email" id="editor-email" required placeholder="editor@school.ua"
+                        class="w-full px-3 py-2 border border-stone-300 rounded text-sm focus:outline-none focus:border-accent bg-stone-50">
+                </div>
+                <div class="bg-stone-100 p-3 rounded text-xs text-stone-600 border border-stone-200 leading-relaxed">
+                    <span class="font-semibold text-stone-800">Увага:</span><br>
+                    Доступ мають лише затверджені адміністрацією email-адреси.
+                </div>
+                <button type="submit" class="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium py-2.5 rounded text-sm transition shadow">
+                    Підтвердити
+                </button>
+            </form>
+            <div id="logout-section" class="mt-4 pt-4 border-t border-stone-200 hidden">
+                <button onclick="handleLogout()" class="w-full bg-red-100 hover:bg-red-200 text-accent font-medium py-2 rounded text-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-from-bracket"></i> Вийти з акаунту редактора
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальне вікно редагування статті -->
+    <div id="article-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-paper rounded-lg max-w-2xl w-full p-6 shadow-2xl border border-stone-400 relative font-sans my-8">
+            <button onclick="closeEditorModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="mb-6">
+                <h3 id="modal-title" class="font-newspaper text-2xl font-bold text-ink">Додати новину</h3>
+                <p class="text-xs text-stone-600">Створіть або оновіть статтю.</p>
+            </div>
+
+            <form id="article-form" onsubmit="saveArticle(event)" class="space-y-4">
+                <input type="hidden" id="article-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-stone-700 mb-1">Заголовок статті</label>
+                        <input type="text" id="article-title" required class="w-full px-3 py-2 border border-stone-300 rounded text-sm focus:outline-none focus:border-accent bg-stone-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-stone-700 mb-1">Автор</label>
+                        <input type="text" id="article-author" required placeholder="Ваше ім'я" class="w-full px-3 py-2 border border-stone-300 rounded text-sm focus:outline-none focus:border-accent bg-stone-50">
+                    </div>
+                </div>
+
+                <div class="space-y-2 p-3 bg-stone-50 border border-stone-200 rounded">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-stone-700">Додати фото</label>
+                    <div class="flex flex-col sm:flex-row gap-3 items-center">
+                        <div class="w-full">
+                            <input type="file" id="article-photo-file" accept="image/*" onchange="handleImageUpload(event)"
+                                class="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-stone-200 file:text-stone-700 hover:file:bg-stone-300 cursor-pointer">
+                        </div>
+                        <span class="text-xs text-stone-400 font-mono">АБО</span>
+                        <input type="url" id="article-image" placeholder="Вставте URL фото" class="w-full px-3 py-2 border border-stone-300 rounded text-sm focus:outline-none focus:border-accent bg-white">
+                    </div>
+                    <div id="photo-preview-container" class="hidden mt-2">
+                        <p class="text-xs text-stone-500 mb-1">Попередній перегляд:</p>
+                        <img id="photo-preview" src="" alt="Preview" class="h-24 rounded border border-stone-300 object-cover">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-stone-700 mb-1">Текст статті</label>
+                    <textarea id="article-content" rows="6" required placeholder="Опишіть деталі події..." class="w-full px-3 py-2 border border-stone-300 rounded text-sm focus:outline-none focus:border-accent bg-stone-50"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t border-stone-200">
+                    <button type="button" onclick="closeEditorModal()" class="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded text-sm font-medium transition">Скасувати</button>
+                    <button type="submit" class="px-5 py-2 bg-accent hover:bg-red-800 text-white rounded text-sm font-medium transition shadow">Опублікувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Сповіщення -->
+    <div id="alert-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-paper rounded-lg max-w-sm w-full p-6 shadow-2xl border border-stone-400 text-center font-sans">
+            <div id="alert-icon" class="text-3xl text-accent mb-3"><i class="fa-solid fa-circle-exclamation"></i></div>
+            <h4 id="alert-title" class="font-bold text-lg text-ink mb-1">Сповіщення</h4>
+            <p id="alert-message" class="text-sm text-stone-600 mb-5">Повідомлення...</p>
+            <button onclick="closeAlertModal()" class="w-full bg-stone-900 text-white py-2 rounded text-sm font-medium hover:bg-stone-800 transition">Зрозуміло</button>
+        </div>
+    </div>
+
+    <script>
+        // СПИСОК ДОЗВОЛЕНИХ ЕЛЕКТРОННИХ ПОШТ РЕДАКТОРІВ
+        const allowedEditors = [
+            "sofia.prystupa2000@gmail.com",
+            "werteyegor@gmail.com",
+            "president@school.ua"
+        ];
+
+        const defaultArticles = [
+            {
+                id: 'news-1',
+                title: '',
+                author: '',
+                date: '',
+                image: '',
+                content: ''
+            }
+        ];
+
+        let articles = JSON.parse(localStorage.getItem('school_news_articles_v3')) || defaultArticles;
+        let currentEditorEmail = localStorage.getItem('school_news_user') || null;
+        let currentSpreadIndex = 0;
+        let uploadedImageBase64 = '';
+
+        window.onload = function () {
+            updateAuthUI();
+            renderNewspaper();
+        };
+
+        function showAlert(title, message, isError = false) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-message').innerText = message;
+            document.getElementById('alert-icon').innerHTML = isError
+                ? '<i class="fa-solid fa-triangle-exclamation text-amber-600"></i>'
+                : '<i class="fa-solid fa-circle-check text-green-600"></i>';
+            document.getElementById('alert-modal').classList.remove('hidden');
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alert-modal').classList.add('hidden');
+        }
+
+        function openAuthModal() {
+            document.getElementById('auth-modal').classList.remove('hidden');
+            if (currentEditorEmail) {
+                document.getElementById('editor-email').value = currentEditorEmail;
+                document.getElementById('logout-section').classList.remove('hidden');
+            } else {
+                document.getElementById('editor-email').value = '';
+                document.getElementById('logout-section').classList.add('hidden');
+            }
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        function handleAuth(event) {
+            event.preventDefault();
+            const email = document.getElementById('editor-email').value.trim().toLowerCase();
+            
+            if (!allowedEditors.includes(email)) {
+                showAlert('Доступ заборонено', `Ця електронна адреса (${email}) не має прав редактора. Зверніться до адміністратора для підтвердження.`, true);
+                return;
+            }
+
+            currentEditorEmail = email;
+            localStorage.setItem('school_news_user', email);
+            closeAuthModal();
+            updateAuthUI();
+            renderNewspaper();
+            showAlert('Успішно!', `Вітаємо, ${email}! Права редактора активовано.`);
+        }
+
+        function handleLogout() {
+            currentEditorEmail = null;
+            localStorage.removeItem('school_news_user');
+            closeAuthModal();
+            updateAuthUI();
+            renderNewspaper();
+            showAlert('Вихід виконано', 'Ви вийшли з акаунта редактора.');
+        }
+
+        function updateAuthUI() {
+            const userDisplay = document.getElementById('current-user-display');
+            const authBtnText = document.getElementById('auth-btn-text');
+            const addBtn = document.getElementById('add-article-btn');
+
+            if (currentEditorEmail) {
+                userDisplay.innerText = currentEditorEmail;
+                authBtnText.innerText = 'Змінити акаунт';
+                addBtn.classList.remove('hidden');
+            } else {
+                userDisplay.innerText = 'Гість (Читач)';
+                authBtnText.innerText = 'Доступ редактора';
+                addBtn.classList.add('hidden');
+            }
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                uploadedImageBase64 = e.target.result;
+                document.getElementById('article-image').value = uploadedImageBase64;
+
+                const preview = document.getElementById('photo-preview');
+                preview.src = uploadedImageBase64;
+                document.getElementById('photo-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderNewspaper() {
+            const itemsPerPage = 2;
+            const totalSpreads = Math.max(1, Math.ceil(articles.length / itemsPerPage));
+
+            if (currentSpreadIndex >= totalSpreads) {
+                currentSpreadIndex = Math.max(0, totalSpreads - 1);
+            }
+
+            document.getElementById('page-indicator').innerText = `Сторінка ${currentSpreadIndex + 1} / ${totalSpreads}`;
+            document.getElementById('prev-btn').disabled = currentSpreadIndex === 0;
+            document.getElementById('next-btn').disabled = currentSpreadIndex >= totalSpreads - 1;
+
+            const leftContainer = document.getElementById('left-page');
+            const rightContainer = document.getElementById('right-page');
+
+            const startIndex = currentSpreadIndex * itemsPerPage;
+            const leftArticle = articles[startIndex];
+            const rightArticle = articles[startIndex + 1];
+
+            leftContainer.innerHTML = leftArticle ? generateArticleHTML(leftArticle, startIndex + 1) : generateEmptyPageHTML();
+            rightContainer.innerHTML = rightArticle ? generateArticleHTML(rightArticle, startIndex + 2) : generateEmptyPageHTML();
+
+            leftContainer.classList.remove('page-turn-anim');
+            rightContainer.classList.remove('page-turn-anim');
+            void leftContainer.offsetWidth;
+            leftContainer.classList.add('page-turn-anim');
+            rightContainer.classList.add('page-turn-anim');
+        }
+
+        function generateArticleHTML(article, pageNum) {
+            const isEditor = currentEditorEmail !== null;
+            return `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b border-stone-200 pb-2">
+                        <span class="text-xs font-mono text-stone-500"><i class="fa-regular fa-calendar-days mr-1"></i> ${article.date || ''}</span>
+                        <span class="text-xs font-mono text-stone-400">Сторінка ${pageNum}</span>
+                    </div>
+
+                    <h2 class="font-newspaper text-2xl sm:text-3xl font-extrabold text-ink leading-tight">
+                        ${article.title}
+                    </h2>
+
+                    ${article.author ? `
+                        <div class="flex items-center space-x-2 text-xs font-sans text-stone-600 italic">
+                            <i class="fa-solid fa-pen-nib text-accent"></i> <span>${article.author}</span>
+                        </div>
+                    ` : ''}
+
+                    ${article.image ? `
+                        <div class="my-3 overflow-hidden rounded border border-stone-300 shadow-sm bg-stone-100">
+                            <img src="${article.image}" alt="Фото статті" class="w-full h-52 object-cover" onerror="this.src='https://placehold.co/600x400/e2d4bc/1c1917?text=Photo+Unavailable'">
+                        </div>
+                    ` : ''}
+
+                    <div class="font-body text-stone-800 text-sm leading-relaxed whitespace-pre-line text-justify">
+                        ${article.content}
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-4 border-t border-stone-200 flex justify-end items-center text-xs font-sans">
+                    ${isEditor ? `
+                        <div class="space-x-2">
+                            <button onclick="openEditorModal('${article.id}')" class="bg-stone-200 hover:bg-stone-300 text-stone-700 px-2.5 py-1 rounded transition">
+                                <i class="fa-solid fa-pen-to-square"></i> Редагувати
+                            </button>
+                            <button onclick="deleteArticle('${article.id}')" class="bg-red-100 hover:bg-red-200 text-accent px-2.5 py-1 rounded transition">
+                                <i class="fa-solid fa-trash"></i> Видалити
+                            </button>
+                        </div>
+                    ` : '<span class="font-mono text-xs text-stone-400">Газета "БЕШКЕТ"</span>'}
+                </div>
+            `;
+        }
+
+        function generateEmptyPageHTML() {
+            return `
+                <div class="h-full flex flex-col items-center justify-center text-center p-8 text-stone-400">
+                    <p class="font-newspaper text-lg italic">Очікуйте на нові статті</p>
+                </div>
+            `;
+        }
+
+        function nextSpread() {
+            const totalSpreads = Math.ceil(articles.length / 2);
+            if (currentSpreadIndex < totalSpreads - 1) {
+                currentSpreadIndex++;
+                renderNewspaper();
+            }
+        }
+
+        function prevSpread() {
+            if (currentSpreadIndex > 0) {
+                currentSpreadIndex--;
+                renderNewspaper();
+            }
+        }
+
+        function openEditorModal(articleId = null) {
+            if (!currentEditorEmail) {
+                showAlert('Потрібна авторизація', 'Будь ласка, увійдіть як редактор, щоб керувати матеріалами.', true);
+                openAuthModal();
+                return;
+            }
+
+            const modal = document.getElementById('article-modal');
+            const form = document.getElementById('article-form');
+            form.reset();
+            document.getElementById('photo-preview-container').classList.add('hidden');
+            uploadedImageBase64 = '';
+
+            if (articleId) {
+                document.getElementById('modal-title').innerText = 'Редагувати статтю';
+                const article = articles.find(a => a.id === articleId);
+                if (article) {
+                    document.getElementById('article-id').value = article.id;
+                    document.getElementById('article-title').value = article.title;
+                    document.getElementById('article-author').value = article.author;
+                    document.getElementById('article-image').value = article.image || '';
+                    document.getElementById('article-content').value = article.content;
+
+                    if (article.image) {
+                        document.getElementById('photo-preview').src = article.image;
+                        document.getElementById('photo-preview-container').classList.remove('hidden');
+                    }
+                }
+            } else {
+                document.getElementById('modal-title').innerText = 'Додати статтю';
+                document.getElementById('article-id').value = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeEditorModal() {
+            document.getElementById('article-modal').classList.add('hidden');
+        }
+
+        function saveArticle(event) {
+            event.preventDefault();
+            const id = document.getElementById('article-id').value;
+            const title = document.getElementById('article-title').value.trim();
+            const author = document.getElementById('article-author').value.trim();
+            const image = document.getElementById('article-image').value.trim();
+            const content = document.getElementById('article-content').value.trim();
+
+            const currentDate = new Date().toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
+
+            if (id) {
+                const index = articles.findIndex(a => a.id === id);
+                if (index !== -1) {
+                    articles[index] = { ...articles[index], title, author, image, content };
+                }
+                showAlert('Успіх', 'Статтю оновлено.');
+            } else {
+                const newArticle = {
+                    id: 'news-' + Date.now(),
+                    title,
+                    author,
+                    date: currentDate,
+                    image,
+                    content
+                };
+                articles.unshift(newArticle);
+                showAlert('Успіх', 'Нову статтю успішно додано.');
+            }
+
+            localStorage.setItem('school_news_articles_v3', JSON.stringify(articles));
+            closeEditorModal();
+            renderNewspaper();
+        }
+
+        function deleteArticle(articleId) {
+            if (!currentEditorEmail) {
+                showAlert('Доступ заборонено', 'Тільки редактори можуть видаляти статті.', true);
+                return;
+            }
+
+            if (confirm('Ви дійсно хочете видалити цю статтю?')) {
+                articles = articles.filter(a => a.id !== articleId);
+                localStorage.setItem('school_news_articles_v3', JSON.stringify(articles));
+                renderNewspaper();
+                showAlert('Видалено', 'Статтю успішно видалено.');
+            }
+        }
+    </script>
+</body>
+
+</html>
