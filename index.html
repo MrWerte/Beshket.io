@@ -230,14 +230,14 @@
             event.preventDefault();
             const email = document.getElementById('editor-email').value.trim().toLowerCase();
             if (!allowedEditors.includes(email)) {
-                showAlert('Доступ заборонено', 'Ця адреса не має прав редактора.');
+                showAlert('Доступ заборонено', 'Ви не має прав редактора.');
                 return;
             }
             currentEditorEmail = email;
             localStorage.setItem('school_news_user', email);
             closeAuthModal();
             updateAuthUI();
-            showAlert('Успішно!', 'Права редактора активовано.');
+            showAlert('Успішно!', 'Права редактора .');
         }
 
         function handleLogout() {
@@ -257,7 +257,7 @@
         async function fetchArticlesFromTelegram() {
             if (TELEGRAM_BOT_TOKEN.includes("ВСТАВТЕ")) {
                 // Якщо токени ще не ввели, показуємо заглушку
-                articles = [{ id: 'news-1', title: 'Ласкаво просимо до газети "БЕШКЕТ"', author: 'Редакція', date: '9 жовтня 2026', image: '', content: 'Будь ласка, налаштуйте токен Telegram-бота у коді сайту, щоб завантажувати новини з каналу.' }];
+                articles = [{ id: 'news-1', title: '', author: '', date: '', image: '', content: '' }];
                 renderNewspaper();
                 return;
             }
@@ -293,7 +293,7 @@
                 renderNewspaper();
             } catch (error) {
                 console.error(error);
-                showAlert('Помилка', 'Не вдалося завантажити новини з Telegram.');
+                showAlert('Помилка');
             }
         }
 
@@ -346,7 +346,7 @@
         async function saveArticle(event) {
             event.preventDefault();
             if (TELEGRAM_BOT_TOKEN.includes("ВСТАВТЕ")) {
-                showAlert('Помилка', 'Спочатку налаштуйте токен бота у коді!');
+                showAlert('Помилка', '!');
                 return;
             }
 
@@ -382,7 +382,7 @@
                 publishBtn.innerText = 'Опублікувати';
                 publishBtn.disabled = false;
                 closeEditorModal();
-                showAlert('Успіх!', 'Статтю успішно надіслано в Telegram-канал і опубліковано на сайті.');
+                showAlert('', 'Статтю успішно опубліковано');
                 
                 // Перезавантажуємо новини з каналу
                 fetchArticlesFromTelegram();
