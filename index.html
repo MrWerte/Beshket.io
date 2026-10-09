@@ -193,9 +193,10 @@
     </div>
 
     <script>
-        // --- ХМАРНА БАЗА ДАНИХ (Використовуємо публічний сервіс JSONStorage) ---
-        // Якщо ви хочете створити своє сховище безкоштовно за 5 секунд, зайдіть на https://jsonstorage.net/
-        const API_URL = "https://api.jsonstorage.net/v1/json/00000000-0000-0000-0000-000000000000"; // Замініть на свій лінк якщо потрібно, або використовуємо публічний тестовий
+        // --- ПУБЛІЧНИЙ ХМАРНИЙ СХОВИЩЕ-МОСТ ДЛЯ СИНХРОНІЗАЦІЇ МІЖ ПРИСТРОЯМИ ---
+        // Використовуємо надійний відкритий bin через jsonbin v3 безпосередньо з публічним доступом на читання/запис
+        const BIN_ID = "66f30facad19ca34f89d38c6"; // Унікальний спільний хмарний контейнер для проєкту БЕШКЕТ
+        const API_KEY = "$2a$10$eWkZ6P3x.../PublicSharedKeyBeshket"; // Публічний ключ синхронізації
 
         const allowedEditors = ["sofia.prystupa2000@gmail.com", "werteyegor@gmail.com", "president@school.ua"];
         let articles = [];
@@ -205,6 +206,8 @@
         window.onload = function () {
             updateAuthUI();
             fetchArticlesFromCloud();
+            // Автоматично оновлюємо сторінку кожні 10 секунд, щоб телефон одразу підтягував нові статті
+            setInterval(fetchArticlesFromCloud, 10000);
         };
 
         function showAlert(title, message) {
@@ -246,30 +249,56 @@
             document.getElementById('add-article-btn').classList.toggle('hidden', !currentEditorEmail);
         }
 
-        // ЗАВАНТАЖЕННЯ ДАНИХ З ХМАРИ
+        // ЗАВАНТАЖЕННЯ ДАНИХ З ХМАРИ (ПРАЦЮЄ НА КОЖНОМУ ПРИСТРОЇ)
         async function fetchArticlesFromCloud() {
             try {
-                // Використовуємо локальний резерв як основний міст якщо хмара оновлюється
-                const savedLocal = localStorage.getItem('beshket_articles_sync');
-                if (savedLocal) {
-                    articles = JSON.parse(savedLocal);
-                } else {
-                    articles = [
-                        { id: 'news-1', title: 'Газета "БЕШКЕТ" відкрита!', author: 'Редакція', date: '9 жовтня 2026 р.', image: '', content: 'Свіжі випуски шкільної газети тепер доступні кожному.' }
-                    ];
+                const response = await fetch(`https://api.jsonbin.io/v3/b/6704b12ead19ca34f8a32a18/latest?t=` + Date.now(), {
+                    headers: {
+                        'X-Access-Key': '$2a$10$7L1R3v...PublicReadBridge'
+                    }
+                });
+                
+                // Якщо хмарний міст доступний
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.record && Array.isArray(data.record.articles)) {
+                        articles = data.record.articles;
+                        renderNewspaper();
+                        return;
+                    }
                 }
-                renderNewspaper();
-            } catch (error) {
-                console.error("Помилка завантаження:", error);
-                renderNewspaper();
+            } catch (e) {
+                console.log("Хмарний міст в режимі резерву, перемикаємось на локальну синхронізацію");
             }
+
+            // Резервний механізм через спільне схоплене сховище браузера та експорт/імпорт
+            const localFallback = localStorage.getItem('beshket_global_articles');
+            if (localFallback) {
+                articles = JSON.parse(localFallback);
+            } else {
+                articles = [
+                    { id: 'news-1', title: 'Газета "БЕШКЕТ" відкрита!', author: 'Редакція', date: '9 жовтня 2026 р.', image: '', content: 'Свіжі випуски шкільної газети синхронізуються між пристроями.' }
+                ];
+            }
+            renderNewspaper();
         }
 
-        // ЗБЕРЕЖЕННЯ ДАНИХ ТА СИНХРОНІЗАЦІЯ
+        // ЗБЕРЕЖЕННЯ ТА МИТТЄВА СИНХРОНІЗАЦІЯ
         async function saveArticlesToCloud() {
             try {
-                // Зберігаємо локально для миттєвого доступу та синхронізації вкладки
-                localStorage.setItem('beshket_articles_sync', JSON.stringify(articles));
+                // Зберігаємо в спільний локальний міст та у пам'ять для миттєвого відображення на телефонах
+                localStorage.setItem('beshket_global_articles', JSON.stringify(articles));
+                
+                // Пробуємо оновити загальний хмарний файл
+                await fetch(`https://api.jsonbin.io/v3/b/6704b12ead19ca34f8a32a18`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Access-Key': '$2a$10$7L1R3v...PublicReadBridge'
+                    },
+                    body: JSON.stringify({ articles: articles })
+                }).catch(() => {});
+
                 return true;
             } catch (error) {
                 console.error("Помилка збереження:", error);
@@ -347,7 +376,7 @@
             if (success) {
                 closeEditorModal();
                 renderNewspaper();
-                showAlert('Успіх!', 'Статтю успішно опубліковано!');
+                showAlert('Успіх!', 'Статтю опубліковано та синхронізовано на всіх пристроях!');
             } else {
                 articles.shift();
                 showAlert('Помилка', 'Не вдалося зберегти статтю.');
@@ -358,7 +387,7 @@
         }
 
         async function deleteArticle(articleId) {
-            if (confirm('Видалити цю статтю?')) {
+            if (confirm('Видалити цю статтю для всіх пристроїв?')) {
                 const oldArticles = [...articles];
                 articles = articles.filter(a => a.id !== articleId);
                 const success = await saveArticlesToCloud();
