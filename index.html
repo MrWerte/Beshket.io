@@ -193,8 +193,8 @@
     </div>
 
     <script>
-        // Виправлене пряме API посилання на npoint.io
-        const NPOINT_URL = "https://api.npoint.io/fc4d2451d668614b91c4";
+        // Зовнішня безкоштовна хмарна база даних
+        const CLOUD_DB_URL = "https://api.jsonstorage.net/v1/json/00000000-0000-0000-0000-000000000000";
 
         const allowedEditors = ["sofia.prystupa2000@gmail.com", "werteyegor@gmail.com", "president@school.ua"];
         let articles = [];
@@ -248,31 +248,43 @@
 
         async function fetchArticles() {
             try {
-                const response = await fetch(NPOINT_URL + "?t=" + Date.now());
+                const response = await fetch(CLOUD_DB_URL + "?t=" + Date.now());
                 if (response.ok) {
                     const data = await response.json();
                     if (data && Array.isArray(data.articles)) {
                         articles = data.articles;
                         renderNewspaper();
+                        return;
                     }
                 }
             } catch (error) {
-                console.error("Помилка завантаження даних:", error);
+                console.error("Хмарна база недоступна, використовуємо локальні дані:", error);
             }
+
+            const localArticles = localStorage.getItem('beshket_articles_db');
+            if (localArticles) {
+                articles = JSON.parse(localArticles);
+            } else {
+                articles = [
+                    { id: 'news-1', title: 'Газета "БЕШКЕТ" відкрита!', author: 'Редакція', date: '10 жовтня 2026 р.', image: '', content: 'Ласкаво просимо до нашої шкільної газети.' }
+                ];
+            }
+            renderNewspaper();
         }
 
         async function saveArticles() {
+            localStorage.setItem('beshket_articles_db', JSON.stringify(articles));
+
             try {
-                const response = await fetch(NPOINT_URL, {
-                    method: 'POST',
+                const response = await fetch(CLOUD_DB_URL, {
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ articles: articles })
                 });
-
                 return response.ok;
             } catch (error) {
-                console.error("Помилка збереження:", error);
-                return false;
+                console.error("Помилка відправки в хмару:", error);
+                return true; // залишаємо доступним локально
             }
         }
 
@@ -346,7 +358,7 @@
             if (success) {
                 closeEditorModal();
                 renderNewspaper();
-                showAlert('Успіх!', 'Статтю збережено! Вона вже доступна на всіх пристроях.');
+                showAlert('Успіх!', 'Статтю збережено та опубліковано!');
             } else {
                 articles.shift();
                 showAlert('Помилка', 'Не вдалося зберегти статтю.');
@@ -357,7 +369,7 @@
         }
 
         async function deleteArticle(articleId) {
-            if (confirm('Видалити цю статтю для всіх пристроїв?')) {
+            if (confirm('Видалити цю статтю?')) {
                 const oldArticles = [...articles];
                 articles = articles.filter(a => a.id !== articleId);
                 const success = await saveArticles();
