@@ -193,10 +193,8 @@
     </div>
 
     <script>
-        // --- НАЛАШТУВАННЯ GITHUB РЕПОЗИТОРІЮ ---
-        const GITHUB_USER = "MrWerte"; // Ваш логін GitHub
-        const GITHUB_REPO = "Beshket"; // Назва репозиторію
-        const GITHUB_TOKEN = "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"; // Ваш токен
+        // ВСТАВТЕ СУДИ ВАШЕ ПОСИЛАННЯ З NPOINT.IO
+        const NPOINT_URL = "https://www.npoint.io/docs/fc4d2451d668614b91c4";
 
         const allowedEditors = ["sofia.prystupa2000@gmail.com", "werteyegor@gmail.com", "president@school.ua"];
         let articles = [];
@@ -205,9 +203,9 @@
 
         window.onload = function () {
             updateAuthUI();
-            fetchArticlesFromRepo();
-            // Автоматичне оновлення кожні 15 секунд для синхронізації з телефоном
-            setInterval(fetchArticlesFromRepo, 15000);
+            fetchArticles();
+            // Автоматичне оновлення даних кожні 10 секунд
+            setInterval(fetchArticles, 10000);
         };
 
         function showAlert(title, message) {
@@ -217,7 +215,6 @@
         }
         function closeAlertModal() { document.getElementById('alert-modal').classList.add('hidden'); }
         function openAuthModal() { 
-            document.getElementById('auth-modal').classList.add('hidden'); // не використовується зайвий раз
             document.getElementById('auth-modal').classList.remove('hidden');
             if(currentEditorEmail) document.getElementById('logout-section').classList.remove('hidden');
         }
@@ -250,77 +247,41 @@
             document.getElementById('add-article-btn').classList.toggle('hidden', !currentEditorEmail);
         }
 
-        // ЗАВАНТАЖЕННЯ НОВИН З GITHUB РЕПОЗИТОРІЮ
-        async function fetchArticlesFromRepo() {
+        // ЗАВАНТАЖЕННЯ СТАТЕЙ З NPOINT (МИТТЄВО ТА БЕЗ КЕШУВАННЯ)
+        async function fetchArticles() {
+            if (!NPOINT_URL || NPOINT_URL.includes("ВСТАВТЕ")) return;
+
             try {
-                const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/articles.json?t=` + Date.now(), {
-                    cache: "no-store"
-                });
+                const response = await fetch(NPOINT_URL);
                 if (response.ok) {
                     const data = await response.json();
                     if (data && Array.isArray(data.articles)) {
                         articles = data.articles;
                         renderNewspaper();
-                        return;
                     }
                 }
-            } catch (e) {
-                console.log("Читання через RAW, перемикаємось на локальний кеш");
+            } catch (error) {
+                console.error("Помилка завантаження даних:", error);
             }
-
-            // Резерв у пам'яті браузера
-            const localFallback = localStorage.getItem('beshket_local_articles');
-            if (localFallback) {
-                articles = JSON.parse(localFallback);
-            } else {
-                articles = [
-                    { id: 'news-1', title: 'Газета "БЕШКЕТ" відкрита!', author: 'Редакція', date: '9 жовтня 2026 р.', image: '', content: 'Свіжі випуски шкільної газети синхронізуються через GitHub.' }
-                ];
-            }
-            renderNewspaper();
         }
 
-        // ЗБЕРЕЖЕННЯ ЧЕРЕЗ GITHUB API (ОНОВЛЕННЯ articles.json У РЕПОЗИТОРІЇ)
-        async function saveArticlesToRepo() {
+        // ЗБЕРЕЖЕННЯ СТАТЕЙ У NPOINT
+        async function saveArticles() {
+            if (!NPOINT_URL || NPOINT_URL.includes("ВСТАВТЕ")) {
+                showAlert('Помилка', 'Не вказано посилання NPOINT_URL!');
+                return false;
+            }
+
             try {
-                const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/articles.json`;
-                
-                // 1. Отримуємо поточний SHA файлу (потрібно для GitHub API)
-                let fileSha = "";
-                const getRes = await fetch(apiUrl, {
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-                });
-                if (getRes.ok) {
-                    const fileData = await getRes.json();
-                    fileSha = fileData.sha;
-                }
-
-                // 2. Оновлюємо або створюємо файл articles.json у репозиторії
-                const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify({ articles: articles }, null, 2))));
-                
-                const putRes = await fetch(apiUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${GITHUB_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: "Update articles via web editor",
-                        content: contentEncoded,
-                        sha: fileSha // обов'язковий параметр для перезапису файлу в гіті
-                    })
+                const response = await fetch(NPOINT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ articles: articles })
                 });
 
-                if (putRes.ok) {
-                    localStorage.setItem('beshket_local_articles', JSON.stringify(articles));
-                    return true;
-                } else {
-                    const err = await putRes.json();
-                    console.error("GitHub API Error:", err);
-                    return false;
-                }
+                return response.ok;
             } catch (error) {
-                console.error("Помилка збереження в репозиторій:", error);
+                console.error("Помилка збереження:", error);
                 return false;
             }
         }
@@ -377,7 +338,7 @@
         async function saveArticle(event) {
             event.preventDefault();
             const publishBtn = document.getElementById('publish-btn');
-            publishBtn.innerText = 'Оновлення GitHub...';
+            publishBtn.innerText = 'Збереження...';
             publishBtn.disabled = true;
 
             const newArticle = {
@@ -390,15 +351,15 @@
             };
 
             articles.unshift(newArticle);
-            const success = await saveArticlesToRepo();
+            const success = await saveArticles();
 
             if (success) {
                 closeEditorModal();
                 renderNewspaper();
-                showAlert('Успіх!', 'Статтю збережено в репозиторії GitHub, і вона за кілька секунд зявиться на всіх пристроях!');
+                showAlert('Успіх!', 'Статтю збережено! Вона вже доступна на всіх пристроях.');
             } else {
                 articles.shift();
-                showAlert('Помилка', 'Не вдалося оновити файл на GitHub.');
+                showAlert('Помилка', 'Не вдалося зберегти статтю.');
             }
 
             publishBtn.innerText = 'Опублікувати';
@@ -409,7 +370,7 @@
             if (confirm('Видалити цю статтю для всіх пристроїв?')) {
                 const oldArticles = [...articles];
                 articles = articles.filter(a => a.id !== articleId);
-                const success = await saveArticlesToRepo();
+                const success = await saveArticles();
 
                 if (success) {
                     renderNewspaper();
