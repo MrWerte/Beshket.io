@@ -193,8 +193,8 @@
     </div>
 
     <script>
-        // ВСТАВТЕ СУДИ ВАШЕ ПОСИЛАННЯ З NPOINT.IO
-        const NPOINT_URL = "https://www.npoint.io/docs/fc4d2451d668614b91c4";
+        // Пряме API посилання для завантаження та збереження даних з Npoint
+        const NPOINT_URL = "fc4d2451d668614b91c4";
 
         const allowedEditors = ["sofia.prystupa2000@gmail.com", "werteyegor@gmail.com", "president@school.ua"];
         let articles = [];
@@ -204,7 +204,6 @@
         window.onload = function () {
             updateAuthUI();
             fetchArticles();
-            // Автоматичне оновлення даних кожні 10 секунд
             setInterval(fetchArticles, 10000);
         };
 
@@ -247,10 +246,7 @@
             document.getElementById('add-article-btn').classList.toggle('hidden', !currentEditorEmail);
         }
 
-        // ЗАВАНТАЖЕННЯ СТАТЕЙ З NPOINT (МИТТЄВО ТА БЕЗ КЕШУВАННЯ)
         async function fetchArticles() {
-            if (!NPOINT_URL || NPOINT_URL.includes("ВСТАВТЕ")) return;
-
             try {
                 const response = await fetch(NPOINT_URL);
                 if (response.ok) {
@@ -265,13 +261,7 @@
             }
         }
 
-        // ЗБЕРЕЖЕННЯ СТАТЕЙ У NPOINT
         async function saveArticles() {
-            if (!NPOINT_URL || NPOINT_URL.includes("ВСТАВТЕ")) {
-                showAlert('Помилка', 'Не вказано посилання NPOINT_URL!');
-                return false;
-            }
-
             try {
                 const response = await fetch(NPOINT_URL, {
                     method: 'POST',
