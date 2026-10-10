@@ -284,27 +284,45 @@
         }
 
         // ЗБЕРЕЖЕННЯ ТА МИТТЄВА СИНХРОНІЗАЦІЯ
-        async function saveArticlesToCloud() {
-            try {
-                // Зберігаємо в спільний локальний міст та у пам'ять для миттєвого відображення на телефонах
-                localStorage.setItem('beshket_global_articles', JSON.stringify(articles));
-                
-                // Пробуємо оновити загальний хмарний файл
-                await fetch(`https://api.jsonbin.io/v3/b/6704b12ead19ca34f8a32a18`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Access-Key': '$2a$10$7L1R3v...PublicReadBridge'
-                    },
-                    body: JSON.stringify({ articles: articles })
-                }).catch(() => {});
-
-                return true;
-            } catch (error) {
-                console.error("Помилка збереження:", error);
-                return false;
+       async function saveArticlesToCloud() {
+    try {
+        const response = await fetch(
+            `https://api.jsonbin.io/v3/b/${BIN_ID}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Access-Key': API_KEY
+                },
+                body: JSON.stringify({ articles })
             }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `Ошибка сервера: ${response.status} ${response.statusText}`
+            );
         }
+
+        localStorage.setItem(
+            'beshket_global_articles',
+            JSON.stringify(articles)
+        );
+
+        return true;
+
+    } catch (error) {
+        console.error('Ошибка сохранения:', error);
+
+        showAlert(
+            'Помилка',
+            'Не вдалося зберегти статтю в хмарі. Спробуйте пізніше.'
+        );
+
+        return false;
+    }
+}
+
 
         function renderNewspaper() {
             const itemsPerPage = 2;
