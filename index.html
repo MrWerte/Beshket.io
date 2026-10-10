@@ -193,8 +193,8 @@
     </div>
 
     <script>
-        // Пряме API посилання для завантаження та збереження даних з Npoint
-        const NPOINT_URL = "fc4d2451d668614b91c4";
+        // Виправлене пряме API посилання на npoint.io
+        const NPOINT_URL = "https://api.npoint.io/fc4d2451d668614b91c4";
 
         const allowedEditors = ["sofia.prystupa2000@gmail.com", "werteyegor@gmail.com", "president@school.ua"];
         let articles = [];
@@ -248,7 +248,7 @@
 
         async function fetchArticles() {
             try {
-                const response = await fetch(NPOINT_URL);
+                const response = await fetch(NPOINT_URL + "?t=" + Date.now());
                 if (response.ok) {
                     const data = await response.json();
                     if (data && Array.isArray(data.articles)) {
